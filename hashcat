@@ -1,0 +1,70 @@
+---
+syntax: bash
+tags: [ cracking, post ]
+---
+# Notes:
+# - use a custom wordlist to begin with (generate with cewl)
+
+# Identify potential hash modes from a given hash:
+hashcat.exe --identify hash.txt
+
+# General cracking flow:
+
+# 1. extract hashes
+# - pull hashes from target and identify hashing function
+# 2. format hashes
+# - format hashes according to cracking tool
+# 3. evaluate hash strength
+# - assess target hash and it's cracking speed, to determine selection of dictionaries/masks/rules
+# 4. calculate cracking capabilities
+# - baseline cracking rigs capabilities against hash mode to determine cracking options
+# 5. formulate plan
+# - based on what you know so far come up with a plan of attack
+# 6. analyse passwords
+# - after cracking a sufficient amount of hashes analyze the results for clues or patterns
+# 7. custom attacks
+# - based on password analysis create custom attacks leveraging known clues or patterns
+# 8. advanced attacks
+# - use princeproccessor, custom markov-chains, maskprocessor or custom dictionary attacks
+# 9. repeat
+# - go back to step 5 and continue the process again
+
+# Crack an NTLM hash using a straight wordlist attack:
+hashcat.exe -a 0 -m 1000 <hash_file> <wordlist> -w 4 -O
+
+# Use a rule with the loopback flag, custom wordlist and slight permutations:
+# best64 rule = slight permutations
+# dive rule = major permutations
+# use all kaonashi rules
+hashcat.exe -a 0 -m 1000 hash.txt custom_wordlist.txt -w 4 -O -r .\rules\best64.rule --loopback
+
+# Add discovered passwords to custom wordlist:
+awk -F ":" '{print $2}' hashcat.potfile >> custom_list.txt
+
+# Mask attack:
+hashcat.exe -a 3 -m 1000 -w 4 -O hash.txt rockyou-1-60.hcmask
+
+# Hybrid Mask + Dictionary attack:
+hashcat.exe -a 6 -m 1000 -w 4 -O hash.txt dict.txt rockyou-1-60.hcmask
+hashcat.exe -a 7 1000 -w 4 -O hash.txt rockyou-1-60.hcmask dict.txt
+
+# Combo attack:
+hashcat.exe -a 1 -m 1000 -w 4 -O hash.txt dict.txt dict.txt
+
+# Brute Force attack:
+# ?a = any
+# ?s = special
+# ?l = lowercase
+# ?u = upper
+# ?d = digit
+hashcat -a 3 -m 1000 hash.txt -i ?u?l?l?l?l?l?l?s?d?d -w 4 -O
+
+# Brute Force attack with custom charset:
+hashcat -a 3 -m 1000 hash.txt -w 4 -O -1 ?u?l?d -2 ?s?d ?1?1?1?1?1?1?2?2
+
+# Brute Force with known word/characters:
+hashcat.exe -a 3 -m 1000 hash.txt -w 4 -O Passw?ard?d?d
+
+# Generate a custom mask using PACK:
+python .\statsgen.py passwords.txt -o custom.masks
+python .\maskgen.py custom.masks --minlength=6 --maxlength=10 -o custom.hcmask
